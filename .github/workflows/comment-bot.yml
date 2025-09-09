@@ -1,0 +1,56 @@
+name: Comment Bot
+
+on:
+  issues:
+    types: [opened, labeled]
+
+jobs:
+  comment-on-issue:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+    - name: Check if issue has specific labels and add comment
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        # Get issue details
+        ISSUE_NUMBER=${{ github.event.issue.number }}
+        ISSUE_LABELS="${{ github.event.issue.labels[*].name }}"
+        
+        # Check for bug label
+        if echo "$ISSUE_LABELS" | grep -q "bug"; then
+          echo "Adding comment for bug report"
+          curl -s -X POST \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/issues/$ISSUE_NUMBER/comments \
+            -d '{"body": "Thank you. We will fix it. Best regards, ppq-dev."}'
+        
+        # Check for feature label
+        elif echo "$ISSUE_LABELS" | grep -q "feature"; then
+          echo "Adding comment for feature request"
+          curl -s -X POST \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/issues/$ISSUE_NUMBER/comments \
+            -d '{"body": "Thank you, we will consider to include this feature. Best regards, ppq-dev."}'
+        
+        # Check for discussion label
+        elif echo "$ISSUE_LABELS" | grep -q "discussion"; then
+          echo "Adding comment for discussion"
+          curl -s -X POST \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/issues/$ISSUE_NUMBER/comments \
+            -d '{"body": "Happy to discuss this topic with you. Best regards, ppq-dev."}'
+        
+        # If no specific labels, add a default comment
+        elif [ -z "$ISSUE_LABELS" ] || [ "$ISSUE_LABELS" = "" ]; then
+          echo "Adding default comment for issue without specific labels"
+          curl -s -X POST \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/issues/$ISSUE_NUMBER/comments \
+            -d '{"body": "Hello, world!"}'
+        fi
